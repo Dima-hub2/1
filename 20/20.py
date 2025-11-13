@@ -1,50 +1,44 @@
 class Person:
-    '''Абстрактный класс для людей'''
-    def __init__(self, name: str, role: str):
+    def __init__(self, name, role):
         self.name = name
         self.role = role
-    def get_info(self) -> tuple[str, str]:
+    def get_info(self):
         return (self.name, self.role)
-    def __str__(self) -> str:
-        '''Метод который должен быть переопределён каждым наследником'''
-        pass
+    def __str__(self):
+        pass  # будет переопределяться
 
 class Student(Person):
-    def __init__(self, name: str, course: int):
-        super().__init__(name=name, role='студент')
+    def __init__(self, name, course):
+        super().__init__(name, 'студент')
         self.course = course
-       
-    def __str__(self) -> str:
-        '''Реализация абстрактого метода для студента'''
+    def __str__(self):
         return f'Роль: {self.role}, Имя {self.name}, Курс: {self.course}.'
-  
+
 class Teacher(Person):
-    def __init__(self, name: str, position: str):
-        super().__init__(name=name, role='преподаватель')
+    def __init__(self, name, position):
+        super().__init__(name, 'преподаватель')
         self.position = position
-   
-    def __str__(self) -> str:
-        '''Реализация абстракция метода для преподавателя'''
+    def __str__(self):
         return f'Роль: {self.role}, Имя {self.name}, Позиция: {self.position}.'
 
-class HeadOfDepartment(Teacher):
-    def __init__(self, name: str, department: str):
-        super().__init__(name=name, position='заведующий кафедрой')
+class HeadOfDepartment(Person):
+    def __init__(self, name, department):
+        super().__init__(name, 'заведующий кафедрой')
         self.department = department
-   
-    def __str__(self) -> str:
+    def __str__(self):
         return f'Роль: {self.role}, Имя {self.name}, Кафедра: {self.department}.'
 
 class Discipline:
-    def __init__(self, teacher: Teacher, students: list[Student], name: str):
+    def __init__(self, teacher, students, name, head=None):
         self.teacher = teacher
         self.students = students
         self.name = name
-    def __str__(self) -> str:
-        students = [s.get_info()[0] for s in self.students]
-        return f'Дисциплина: "{self.name}". Преподаватель: {self.teacher.get_info()[0]}. Студенты: ({", ".join(students)})'
+        self.head = head
+    def __str__(self):
+        s = [st.name for st in self.students]
+        h = f' (зав. {self.head.name})' if self.head else ''
+        return f'Дисциплина: "{self.name}". Преподаватель: {self.teacher.name}{h}. Студенты: ({", ".join(s)})'
 
-   
 def main():
     all_objects = []
     menu = '''
@@ -55,83 +49,66 @@ def main():
     '''
     while True:
         print(menu)
-        menu_item = int(input("Введите номер команды: ").strip())
-        if not (0 <= menu_item <= 3):
-            print("Вы ввели неверную команду, попробуйте ещё раз.")
+        choice = input("Введите номер команды: ").strip()
+        if choice not in ['0','1','2','3']:
+            print("Неверная команда!")
             continue
-       
-        match menu_item:
-            case 0:
-                print("Программа завершила свою работу.")
-                break
-            case 1:
-                teacher_input = input("Введите ФИО преподавателя и его должность через запятую: ").strip()
-                if ', ' not in teacher_input:
-                    print("Неверный формат. Пример: Иванов И.И., доцент")
-                    continue
-                teacher_data = teacher_input.split(', ')
-                name_teacher = teacher_data[0]
-                position = teacher_data[1]
 
-                # Поддержка заведующего кафедрой
-                if position.lower() == 'заведующий кафедрой':
-                    department = input("Введите название кафедры: ").strip()
-                    teacher = HeadOfDepartment(name_teacher, department)
-                else:
-                    teacher = Teacher(name_teacher, position)
+        if choice == '0':
+            print("Программа завершена.")
+            break
 
-                discipline = input("Введите Дисциплину: ").strip()
-                students_input = input("ФИО студентов и их курс через запятую (Иванов И.И. 3, Петров П.П. 2): ").strip()
-                
-                if not students_input:
-                    print("Должен быть указан хотя бы один студент. Попробуйте ещё раз.")
-                    continue
-                
-                raw_students = students_input.split(', ')
-                students = []
-                for s in raw_students:
-                    parts = s.rsplit(' ', 1)
-                    if len(parts) != 2:
-                        print(f"Неверный формат студента: {s}")
-                        continue
-                    name = parts[0]
-                    course = int(parts[1])
+        if choice == '1':
+            teacher_input = input("ФИО преподавателя и должность через запятую: ").strip().split(', ')
+            discipline_name = input("Дисциплина: ").strip()
+            students_input = input("ФИО студентов и курс через запятую (Иванов 3, Петров 2): ").strip().split(', ')
+            head_input = input("ФИО зав. кафедрой и название кафедры (или пусто): ").strip()
+
+            # студенты
+            students = []
+            for s in students_input:
+                if s:
+                    name = s[:-2].strip()
+                    course = int(s[-1])
                     students.append(Student(name, course))
-                
-                if len(students) == 0:
-                    print("Не удалось создать ни одного студента.")
-                    continue
-                
-                discipline_obj = Discipline(teacher, students, discipline)
-                all_objects.append(discipline_obj)
-                print("Объект успешно создан!")
-                continue
-            case 2:
-                if len(all_objects) == 0:
-                    print('Нет ни одного созданного объекта. Попробуйте для начала ввести команду 1.')
-                    continue
-               
-                print("Вывод содержимого всех объектов.")
+
+            # преподаватель
+            teacher = Teacher(teacher_input[0].strip(), teacher_input[1].strip())
+
+            # зав. кафедрой (если указан)
+            head = None
+            if head_input:
+                parts = head_input.split(', ')
+                head = HeadOfDepartment(parts[0].strip(), parts[1].strip())
+
+            disc = Discipline(teacher, students, discipline_name, head)
+            all_objects.append(disc)
+            print("Объект создан!")
+
+        elif choice == '2':
+            if not all_objects:
+                print("Нет объектов.")
+            else:
+                print("Все дисциплины:")
                 for obj in all_objects:
                     print(obj)
-               
+
+        elif choice == '3':
+            if not all_objects:
+                print("Нет объектов.")
                 continue
-            case 3:
-                if len(all_objects) == 0:
-                    print("Нет объектов для вывода.")
-                    continue
-                inx = int(input(f"Введите индекс интересующего объекта (0-{len(all_objects)-1}): ").strip())
-                if not(0 <= inx < len(all_objects)):
-                    print("Индекс выходит за допустимый диапазон. Попробуйте ещё раз.")
-                    continue
-                   
-                print(f'Название дисциплины: {all_objects[inx].name}')
-                print(f'Участники:')
-                print(f'{all_objects[inx].teacher}')
-                for s in all_objects[inx].students:
+            idx = int(input("Индекс объекта: ").strip())
+            if 0 <= idx < len(all_objects):
+                print("\nПодробно:")
+                print(f'Название: {all_objects[idx].name}')
+                print(f'Преподаватель: {all_objects[idx].teacher}')
+                if all_objects[idx].head:
+                    print(f'Зав. кафедрой: {all_objects[idx].head}')
+                print("Студенты:")
+                for s in all_objects[idx].students:
                     print(s)
-               
-                continue
-               
+            else:
+                print("Неверный индекс!")
+
 if __name__ == "__main__":
     main()
